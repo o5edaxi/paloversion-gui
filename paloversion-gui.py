@@ -117,7 +117,7 @@ def get_versions(path):
                     if file == "content.csv":
                         continue
                     with open(os.path.join(root, file), 'r') as f:
-                        csvobj = csv.reader(f, delimiter=CSV_SEP)
+                        csvobj = csv.reader(f, delimiter=CSV_DELIM)
                         rows = list(csvobj)
                         for row in rows:
                             if row[1] not in matches and re.match(regexver, row[1]):
