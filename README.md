@@ -1,5 +1,11 @@
 # paloversion-gui
 
+![Alt Text](demo.gif)  
+*Dislaimer: actual upgrades may take longer :)*  
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
 ### Details
 
 This script provides a graphical interface for the [paloversion](https://github.com/o5edaxi/paloversion) script running in batch mode.
