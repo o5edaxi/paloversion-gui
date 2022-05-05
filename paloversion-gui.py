@@ -54,7 +54,7 @@ chosenserial = ""
 status_array = []
 
 regexcsv = re.compile(r'^\w+\.csv$')
-regexver = re.compile(r'^[0-9.a-zA-z]+$')
+regexver = re.compile(r'^[0-9.a-zA-Z-]+$')
 regexlogs = re.compile(r'^(PaloVersionBatch|\d+|fe80[\w:]+)\.log$')
 
 logging.basicConfig(filename="/home/pi/app.logs", filemode='a',
