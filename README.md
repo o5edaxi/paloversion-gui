@@ -15,6 +15,19 @@ This script provides a graphical interface for the [paloversion](https://github.
 * The device running the script must be connected to the same broadcast domain as the firewall's MGMT port.
 * The script is intended to upgrade firewalls with factory settings. To use a custom password, modify the **BACKUP_PASSWORD** variable inside paloversion.sh
 
+### New in v1.4
+
+![Alt Text](v1.4.png)
+
+New buttons allow selecting the following features:
+
+* Config file upload (requires paloversion v1.4 or above): to upload configs after upgrades, copy the files into the USB with filename **$SERIAL_NUMBER-config.xml**, e.g. "01234567890-config.xml"
+* License file upload (requires paloversion v1.4 or above): to activate licenses after upgrades, copy the license files into the USB with filename **$SERIAL_NUMBER-$LICENSE.key**, e.g. "01234567890-support.key"
+* Threat/AV install (requires paloversion v1.4 or above): to install Content and Antivirus packages, place the files into the USB drive with their original filenames (the first matching file will be installed)
+* Panorama authkey (requires paloversion v1.4 or above): to set a Panorama authkey on the firewalls, paste it into a file named "authkey.txt" and copy the file to the USB drive
+* Shutdown after completion
+* Dry runs
+
 ### Installation on Raspberri Pi + Touch Display
 
 The following steps will setup a Raspberry to run the script at boot and load the firmware from a USB stick. A single 3B+ model is enough to upgrade 20+ firewalls per batch fairly quickly.
