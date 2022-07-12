@@ -36,12 +36,21 @@ CSV_DELIM = ","
 TEXT1 = """Remove power to shutdown or restart the Raspberry at any time.
 
 1. Place the firmware files and the up to date .csv in the usb drive
-2. Connect the Raspberry to the firewall, or multiple firewalls using a switch
-3. Make sure the password is admin/admin or admin/Admin123
-4. Select the desired version and press START
-5. The jobs are yellow when in progress, red when failed, and green when completed
-6. Tap on the serial number of a firewall to view the detailed upgrade logs"""
+2. Place Threat and AV files in the usb drive keeping their original filename
+3. Paste the Panorama Authkey in a file named "authkey.txt" and put in the usb drive
+4. Connect the Raspberry to the firewall, or multiple firewalls using a switch
+5. Make sure the password is admin/admin or admin/Admin123
+6. Select the desired version and press START
+7. The jobs are yellow when in progress, red when failed, and green when completed
+8. Tap on the serial number of a firewall to view the detailed upgrade logs
 
+New features are enabled with paloversion v1.4.0 or newer."""
+
+FEATURES_CHECKS = {'errors': '-i',
+                   'licenses': '-k',
+                   'content': '-t "test" -a "test"',
+                   'configuration': '-c',
+                   'authkey': '-p "test"'}
 DESIRED_VERSION = "Pan-OS Selection"
 Window.fullscreen = 'auto'
 Window.show_cursor = False
@@ -56,6 +65,8 @@ status_array = []
 regexcsv = re.compile(r'^\w+\.csv$')
 regexver = re.compile(r'^[0-9.a-zA-Z-]+$')
 regexlogs = re.compile(r'^(PaloVersionBatch|\d+|fe80[\w:]+)\.log$')
+regexcontent = re.compile(r'panupv2-all-contents-\d+-\d+')
+regexantivirus = re.compile(r'panup-all-antivirus-\d+-\d+')
 
 logging.basicConfig(filename="/home/pi/app.logs", filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -139,18 +150,84 @@ def cleanup(path):
                     pass
 
 
+def find_authkey(path):
+    for root, _, files in os.walk(path):
+        for file in files:
+            if file == "authkey.txt":
+                try:
+                    with open(os.path.join(root, file), 'r') as f:
+                        return f.readline().rstrip('\n')
+                except Exception:
+                    pass
+    return ""
+
+
+def find_content(path):
+    for root, _, files in os.walk(path):
+        for file in files:
+            if re.match(regexcontent, file):
+                return file
+    return ""
+
+
+def find_antivirus(path):
+    for root, _, files in os.walk(path):
+        for file in files:
+            if re.match(regexantivirus, file):
+                return file
+    return ""
+
+
+def check_features(option):
+    # Test new paloversion options
+    try:
+        subprocess.check_output([SCRIPT_PATH, option, '-h'])
+        return False
+    except subprocess.CalledProcessError:
+        return True
+
+
 class Panel1(Screen):
     def __init__(self, **kwargs):
         super(Panel1, self).__init__(**kwargs)
         box = BoxLayout(orientation='vertical')
-        label = Label(text=TEXT1)
-        mac_button = ToggleButton(text='Exclude non-PA MAC addresses', font_size=25,
-                                  size_hint_y=0.2, state='down')
+        label = Label(text=TEXT1, font_size=12)
         button = Button(text=DESIRED_VERSION, font_size=30, size_hint_y=0.35,
                         on_release=self.list)
+
+        mac_button = ToggleButton(text='Exclude non-PA\nMAC addresses', font_size=15,
+                                  halign='center', state='down')
+        dry_button = ToggleButton(text="Dry Run", font_size=15)
+        shutdown_button = ToggleButton(text="Shutdown\nafter upgrading", font_size=15,
+                                       halign='center')
+        ignore_errors_button = ToggleButton(text="Don't halt\non errors", font_size=15,
+                                            halign='center',
+                                            disabled=check_features(FEATURES_CHECKS['errors']))
+        license_button = ToggleButton(text="Install\nlicenses", font_size=15, halign='center',
+                                      disabled=check_features(FEATURES_CHECKS['licenses']))
+        content_button = ToggleButton(text="Content\n& AV", font_size=15, halign='center',
+                                      disabled=check_features(FEATURES_CHECKS['content']))
+        config_button = ToggleButton(text="Config", font_size=15, halign='center',
+                                     disabled=check_features(FEATURES_CHECKS['configuration']))
+        authkey_button = ToggleButton(text="Panorama\nAuthkey", font_size=15, halign='center',
+                                      disabled=check_features(FEATURES_CHECKS['authkey']))
         box.add_widget(label)
         box.add_widget(button)
-        box.add_widget(mac_button)
+
+        boxlayout1 = BoxLayout(size_hint_y=0.35)
+        boxlayout1.add_widget(mac_button)
+        boxlayout1.add_widget(dry_button)
+        boxlayout1.add_widget(shutdown_button)
+        boxlayout1.add_widget(ignore_errors_button)
+        box.add_widget(boxlayout1)
+
+        boxlayout2 = BoxLayout(size_hint_y=0.35)
+        boxlayout2.add_widget(license_button)
+        boxlayout2.add_widget(content_button)
+        boxlayout2.add_widget(config_button)
+        boxlayout2.add_widget(authkey_button)
+        box.add_widget(boxlayout2)
+
         enterbutton = Button(text='START', font_size=30, size_hint_y=0.35, on_release=self.close)
         box.add_widget(enterbutton)
         self.add_widget(box)
@@ -160,22 +237,56 @@ class Panel1(Screen):
 
     def close(self, bar):
         if DESIRED_VERSION != "Pan-OS Selection":
-            if self.children[0].children[1].state == "down":
-                # MAC OUI filter yes or no
-                command = '{} -f -z "" "" "" "{}" "{}" "{}"'.format(SCRIPT_PATH, FIRMWARE_PATH,
-                                                                    DESIRED_VERSION,
-                                                                    NETWORK_INTERFACE)
-            else:
-                command = '{} -f -z -m "" "" "" "{}" "{}" "{}"'.format(SCRIPT_PATH, FIRMWARE_PATH,
-                                                                       DESIRED_VERSION,
-                                                                       NETWORK_INTERFACE)
+            OPT_ARGS = ""
+            if self.children[0].children[2].children[3].state == "down":
+                # MAC
+                OPT_ARGS += '-m '
+            if self.children[0].children[2].children[2].state == "down":
+                # DRY
+                OPT_ARGS += '-d '
+            if self.children[0].children[2].children[1].state == "down":
+                # SHUTDOWN
+                OPT_ARGS += '-s '
+            if self.children[0].children[2].children[0].state == "down":
+                # ERRORS
+                OPT_ARGS += '-i '
+            if self.children[0].children[1].children[3].state == "down":
+                # LICENSE
+                OPT_ARGS += '-k '
+            if self.children[0].children[1].children[2].state == "down":
+                # CONTENT
+                content_path = find_content(FIRMWARE_PATH)
+                if content_path == "":
+                    self.parent.current = 'ContentError'
+                    return
+                antivirus_path = find_antivirus(FIRMWARE_PATH)
+                if antivirus_path == "":
+                    self.parent.current = 'AntivirusError'
+                    return
+                OPT_ARGS += '-t "{}" -a "{}" '.format(content_path, antivirus_path)
+            if self.children[0].children[1].children[1].state == "down":
+                # CONFIG
+                OPT_ARGS += "-c "
+            if self.children[0].children[1].children[0].state == "down":
+                # AUTHKEY
+                authkey = find_authkey(FIRMWARE_PATH)
+                if authkey == "":
+                    self.parent.current = 'AuthkeyError'
+                    return
+                OPT_ARGS += '-p "{}"'.format(authkey)
+
+            command = '{} -f {} -z "" "" "" "{}" "{}" "{}"'.format(SCRIPT_PATH, OPT_ARGS,
+                                                                   FIRMWARE_PATH,
+                                                                   DESIRED_VERSION,
+                                                                   NETWORK_INTERFACE)
+            print(command)
             subprocess.Popen(command, shell=True, stdin=None, stdout=open(os.devnull, 'wb'),
                              stderr=open(os.devnull, 'wb'), cwd=SCRIPT_ROOT)
             time.sleep(1)
             self.parent.current = 'General'
-            
+
     def on_pre_enter(self):
-        self.children[0].children[2].text=DESIRED_VERSION
+        self.children[0].children[3].text=DESIRED_VERSION
 
 
 class Panel2(Screen):
@@ -296,6 +407,33 @@ class Panel4(Screen):
         self.parent.current = 'Intro'
 
 
+class Panel5(Screen):
+    def __init__(self, **kwargs):
+        super(Panel5, self).__init__(**kwargs)
+        anchor = AnchorLayout()
+        anchor.add_widget(Label(text='Content file not found.\nContent file name must be in format'
+                                '\n"panupv2-all-contents-1234-1234"', font_size=40))
+        self.add_widget(anchor)
+
+
+class Panel6(Screen):
+    def __init__(self, **kwargs):
+        super(Panel6, self).__init__(**kwargs)
+        anchor = AnchorLayout()
+        anchor.add_widget(Label(text='Antivirus file not found.\nAntivirus file name must be in '
+                                'format\n"panup-all-antivirus-1234-1234"', font_size=40))
+        self.add_widget(anchor)
+
+
+class Panel7(Screen):
+    def __init__(self, **kwargs):
+        super(Panel7, self).__init__(**kwargs)
+        anchor = AnchorLayout()
+        anchor.add_widget(Label(text='Panorama authkey not found.\nAuthkey must be contained\nin '
+                                'file named "authkey.txt"', font_size=40))
+        self.add_widget(anchor)
+
+
 class Manager(App):
     def build(self):
         sm = ScreenManager()
@@ -303,6 +441,9 @@ class Manager(App):
         sm.add_widget(Panel2(name='General'))
         sm.add_widget(Panel3(name='Details'))
         sm.add_widget(Panel4(name='Version'))
+        sm.add_widget(Panel5(name='ContentError'))
+        sm.add_widget(Panel6(name='AntivirusError'))
+        sm.add_widget(Panel7(name='AuthkeyError'))
         return sm
 
 
