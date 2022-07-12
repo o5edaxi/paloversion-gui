@@ -19,12 +19,12 @@ This script provides a graphical interface for the [paloversion](https://github.
 
 ![Alt Text](v1.4.png)
 
-New buttons allow selecting the following features:
+New features are available in the GUI, such as:
 
-* Config file upload (requires paloversion v1.4 or above): to upload configs after upgrades, copy the files into the USB with filename **$SERIAL_NUMBER-config.xml**, e.g. "01234567890-config.xml"
-* License file upload (requires paloversion v1.4 or above): to activate licenses after upgrades, copy the license files into the USB with filename **$SERIAL_NUMBER-$LICENSE.key**, e.g. "01234567890-support.key"
-* Threat/AV install (requires paloversion v1.4 or above): to install Content and Antivirus packages, place the files into the USB drive with their original filenames (the first matching file will be installed)
-* Panorama authkey (requires paloversion v1.4 or above): to set a Panorama authkey on the firewalls, paste it into a file named "authkey.txt" and copy the file to the USB drive
+* Config file upload (requires [paloversion v1.4](https://github.com/o5edaxi/paloversion/releases/tag/v1.4.2) or above): to upload configs after upgrades, copy the files into the USB with filename **$SERIAL_NUMBER-config.xml**, e.g. "01234567890-config.xml"
+* License file upload (requires [paloversion v1.4](https://github.com/o5edaxi/paloversion/releases/tag/v1.4.2) or above): to activate licenses after upgrades, copy the license files into the USB with filename **$SERIAL_NUMBER-$LICENSE.key**, e.g. "01234567890-support.key"
+* Threat/AV install (requires [paloversion v1.4](https://github.com/o5edaxi/paloversion/releases/tag/v1.4.2) or above): to install Content and Antivirus packages, place the files into the USB drive with their original filenames (the first matching file will be installed)
+* Panorama authkey (requires [paloversion v1.4](https://github.com/o5edaxi/paloversion/releases/tag/v1.4.2) or above): to set a Panorama authkey on the firewalls, paste it into a file named "authkey.txt" and copy the file to the USB drive
 * Shutdown after completion
 * Dry runs
 
