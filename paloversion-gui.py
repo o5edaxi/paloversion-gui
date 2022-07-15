@@ -103,10 +103,13 @@ def tail_file(serial):
     except Exception as e:
         if serial == "PaloVersionBatch.log":
             logging.error('Error reading log file for serial {} with exception {}.\nCheck that '
-                          'firewalls are reachable and MAC address is in filter.'.format(serial, e))
+                          'firewalls are reachable and MAC address is in filter.\n'
+                          'Ensure the number of hosts is less than BATCH_MAX'
+                          ' in paloversion.sh'.format(serial, e))
             file_contents = ('Error reading log file for serial {} with exception {}.\nCheck that '
-                             'firewalls are reachable and MAC address is in filter.'.format(serial,
-                                                                                            e))
+                             'firewalls are reachable and MAC address is in filter.\n'
+                             'Ensure the number of hosts is less than BATCH_MAX'
+                             ' in paloversion.sh'.format(serial, e))
         else:
             logging.error('Error reading log file for serial {} with exception {}'.format(serial,
                                                                                           e))
@@ -238,7 +241,7 @@ class Panel1(Screen):
     def close(self, bar):
         if DESIRED_VERSION != "Pan-OS Selection":
             OPT_ARGS = ""
-            if self.children[0].children[2].children[3].state == "down":
+            if self.children[0].children[2].children[3].state != "down":
                 # MAC
                 OPT_ARGS += '-m '
             if self.children[0].children[2].children[2].state == "down":
