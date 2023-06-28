@@ -99,7 +99,9 @@ def tail_file(serial):
     try:
         if serial != "":
             with open(os.path.join(SCRIPT_ROOT, serial), 'r') as f:
-                file_contents = f.read()
+                file_contents = f.readlines()
+            file_contents.reverse()
+            file_contents = '\n'.join(file_contents)
     except Exception as e:
         if serial == "PaloVersionBatch.log":
             logging.error('Error reading log file for serial {} with exception {}.\nCheck that '
@@ -138,7 +140,7 @@ def get_versions(path):
                                 matches.append(row[1])
                 except Exception as e:
                     logging.error("Error opening file {}{}, {}".format(root, file, e))
-    matches.sort(reverse=True)
+    matches.sort(reverse=False)
     return matches
 
 
